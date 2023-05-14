@@ -32,3 +32,9 @@ model <- glm(Outcome~.,data=df,family='binomial')
 summary(model)
 ```
 
+```{r}
+model1 <- glm(Outcome~Glucose, data = df, family = "binomial")
+summary(model1)
+```
+
+
