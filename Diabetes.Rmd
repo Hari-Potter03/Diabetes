@@ -1,0 +1,25 @@
+---
+title: "Diabetes"
+author: "Srihari Srinivasan"
+date: "2023-05-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(tinytex)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(out.width = "60%")
+```
+
+# Importing Data
+
+```{r}
+df <- read.csv('/Users/sriharisrinivasan/Documents/GitHub/Diabetes/diabetes.csv')
+df
+```
+
