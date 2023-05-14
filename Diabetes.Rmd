@@ -23,3 +23,12 @@ df <- read.csv('/Users/sriharisrinivasan/Documents/GitHub/Diabetes/diabetes.csv'
 df
 ```
 
+
+```{r}
+df %>% ggplot(aes(Glucose, BloodPressure)) + 
+  geom_point()
+
+model <- glm(Outcome~.,data=df,family='binomial')
+summary(model)
+```
+
