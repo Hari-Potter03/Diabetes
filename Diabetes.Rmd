@@ -27,7 +27,15 @@ df
 ```{r}
 df %>% ggplot(aes(Glucose, BloodPressure)) + 
   geom_point()
+```
 
+```{r}
+df %>% ggplot(aes(Glucose, Insulin)) + 
+  geom_point()
+```
+
+
+```{r}
 model <- glm(Outcome~.,data=df,family='binomial')
 summary(model)
 ```
@@ -36,5 +44,4 @@ summary(model)
 model1 <- glm(Outcome~Glucose, data = df, family = "binomial")
 summary(model1)
 ```
-
 
