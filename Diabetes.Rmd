@@ -9,6 +9,7 @@ output: pdf_document
 library(tidyverse)
 library(knitr)
 library(tinytex)
+library(ROCR)
 
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
@@ -23,25 +24,184 @@ df <- read.csv('/Users/sriharisrinivasan/Documents/GitHub/Diabetes/diabetes.csv'
 df
 ```
 
+# Exploratory Analysis
 
 ```{r}
-df %>% ggplot(aes(Glucose, BloodPressure)) + 
-  geom_point()
+str(df)
+```
+## Graphs
+
+```{r}
+df %>% ggplot(aes(Age, Outcome)) +
+  geom_jitter(width=0,height=0.1) +
+  geom_smooth(method='glm',se=FALSE,method.args=list(family='binomial')) +
+  scale_y_continuous(limits=c(0,1),breaks=seq(0,1,0.1)) +
+  theme_bw()
+```
+# Modeling
+
+```{r}
+set.seed(1)
+
+model <- glm(data = df, Outcome ~., family = "binomial") 
+coefficients(summary(model))
+
+rows <- sample(x=nrow(df),size=floor(0.75*nrow(df)),replace=FALSE)
+training <- df[rows,]
+testing <- df[-rows,]
+```
+## Backwards-Stepwise Selection Method
+
+```{r}
+#create empty vector to hold accuracies
+accuracy <- data.frame(class_acc=rep(NA,8))
+
+#remove each variable and save accuracy
+for(i in 1:8){
+  
+  #remove i-th variable
+  training_min1 <- training[,-i]
+  
+  #fit model minus one variable
+  model_min1 <- glm(Outcome~.,data=training_min1,family='binomial')
+  
+  #classify testing observations
+  testing_class_min1 <- testing %>%
+    mutate(Outcome_prob=predict(model_min1,newdata=testing,type='response'),
+           Outcome_class=if_else(Outcome_prob>0.5,1,0))
+  
+  #compute and save overall accuracy
+  accuracy$class_acc[i] <- mean(testing_class_min1$Outcome==testing_class_min1$Outcome_class)
+}
 ```
 
 ```{r}
-df %>% ggplot(aes(Glucose, Insulin)) + 
-  geom_point()
-```
+#permanently remove one variable
+training_min1 <- training[,-6]
 
+#create empty vector to hold accuracies
+accuracy2 <- data.frame(class_acc=rep(NA,7))
+
+#remove each variable and save accuracy
+for(i in 1:7){
+  
+  #remove i-th variable
+  training_min2 <- training_min1[,-i]
+  
+  #fit model minus one variable
+  model_min2 <- glm(Outcome~.,data=training_min2,family='binomial')
+  
+  #classify testing observations
+  testing_class_min2 <- testing %>%
+    mutate(Outcome_prob=predict(model_min2,newdata=testing,type='response'),
+           Outcome_class=if_else(Outcome_prob>0.5,1,0))
+  
+  #compute and save overall accuracy
+  accuracy2$class_acc[i] <- mean(testing_class_min2$Outcome==testing_class_min2$Outcome_class)
+}
+```
 
 ```{r}
-model <- glm(Outcome~.,data=df,family='binomial')
-summary(model)
+#permanently remove one variable
+training_min2 <- training_min1[,-6]
+
+#create empty vector to hold accuracies
+accuracy3 <- data.frame(class_acc=rep(NA,6))
+
+#remove each variable and save accuracy
+for(i in 1:6){
+  
+  #remove i-th variable
+  training_min3 <- training_min2[,-i]
+  
+  #fit model minus one variable
+  model_min3 <- glm(Outcome~.,data=training_min3,family='binomial')
+  
+  #classify testing observations
+  testing_class_min3 <- testing %>%
+    mutate(Outcome_prob=predict(model_min3,newdata=testing,type='response'),
+           Outcome_class=if_else(Outcome_prob>0.5,1,0))
+  
+  #compute and save overall accuracy
+  accuracy3$class_acc[i] <- mean(testing_class_min3$Outcome==testing_class_min3$Outcome_class)
+}
 ```
 
 ```{r}
-model1 <- glm(Outcome~Glucose, data = df, family = "binomial")
-summary(model1)
+#permanently remove one variable
+training_min3 <- training_min2[,-5]
+
+#create empty vector to hold accuracies
+accuracy4 <- data.frame(class_acc=rep(NA,5))
+
+#remove each variable and save accuracy
+for(i in 1:5){
+  
+  #remove i-th variable
+  training_min4 <- training_min3[,-i]
+  
+  #fit model minus one variable
+  model_min4 <- glm(Outcome~.,data=training_min4,family='binomial')
+  
+  #classify testing observations
+  testing_class_min4 <- testing %>%
+    mutate(Outcome_prob=predict(model_min4,newdata=testing,type='response'),
+           Outcome_class=if_else(Outcome_prob>0.5,1,0))
+  
+  #compute and save overall accuracy
+  accuracy4$class_acc[i] <- mean(testing_class_min4$Outcome==testing_class_min4$Outcome_class)
+}
 ```
+
+```{r}
+#permanently remove one variable
+training_min4 <- training_min3[,-4]
+
+#create empty vector to hold accuracies
+accuracy5 <- data.frame(class_acc=rep(NA,4))
+
+#remove each variable and save accuracy
+for(i in 1:4){
+  
+  #remove i-th variable
+  training_min5 <- training_min4[,-i]
+  
+  #fit model minus one variable
+  model_min5 <- glm(Outcome~.,data=training_min5,family='binomial')
+  
+  #classify testing observations
+  testing_class_min5 <- testing %>%
+    mutate(Outcome_prob=predict(model_min5,newdata=testing,type='response'),
+           Outcome_class=if_else(Outcome_prob>0.5,1,0))
+  
+  #compute and save overall accuracy
+  accuracy5$class_acc[i] <- mean(testing_class_min5$Outcome==testing_class_min5$Outcome_class)
+}
+```
+
+Stop here
+
+```{r}
+model_final <- glm(Outcome~., data=training_min4, family = "binomial")
+coefficients(summary(model_final))
+
+testing_class <- testing %>%
+  mutate(Outcome_prob=predict(model_final,newdata=testing,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.5,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
+```{r}
+#create required objects for ROC
+pred <- prediction(predictions=testing_class$Outcome_prob,
+                   labels=testing_class$Outcome)
+
+perf <- performance(pred,measure='sens',x.measure='spec')
+
+#plot ROC curve with threshold color
+plot(perf,colorize=TRUE)
+```
+
+
 
