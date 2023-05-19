@@ -182,7 +182,10 @@ for(i in 1:4){
 Stop here
 
 ```{r}
-model_final <- glm(Outcome~., data=training_min4, family = "binomial")
+training <- training_min4
+testing <- testing %>% select(Pregnancies, Glucose, BloodPressure, Age, Outcome)
+
+model_final <- glm(Outcome~., data=training, family = "binomial")
 coefficients(summary(model_final))
 
 testing_class <- testing %>%
@@ -203,5 +206,32 @@ perf <- performance(pred,measure='sens',x.measure='spec')
 plot(perf,colorize=TRUE)
 ```
 
+```{r}
+model_final <- glm(Outcome~., data=training, family = "binomial")
+coefficients(summary(model_final))
+
+# Change the threshold to 0.54
+testing_class <- testing %>%
+  mutate(Outcome_prob=predict(model_final,newdata=testing,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.54,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
+```{r}
+# create contingency table
+contingency_table <- table(testing_class$Outcome,testing_class$Outcome_class)
+
+# Calculate specificity
+specificity <- contingency_table[1, 1] / (contingency_table[1, 1] + contingency_table[1, 2])
+
+# Calculate sensitivity
+sensitivity <- contingency_table[2, 2] / (contingency_table[2, 2] + contingency_table[2, 1])
+
+# Print the results
+print(paste("Specificity:", specificity))
+print(paste("Sensitivity:", sensitivity))
+
+```
 
 
