@@ -10,6 +10,7 @@ library(tidyverse)
 library(knitr)
 library(tinytex)
 library(ROCR)
+library(caret)
 
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
@@ -38,6 +39,13 @@ df %>% ggplot(aes(Age, Outcome)) +
   scale_y_continuous(limits=c(0,1),breaks=seq(0,1,0.1)) +
   theme_bw()
 ```
+# Multi-Collinearity
+
+```{r}
+cor(df)
+```
+
+
 # Modeling
 
 ```{r}
@@ -179,7 +187,7 @@ for(i in 1:4){
 }
 ```
 
-Stop here
+## Final Model
 
 ```{r}
 training <- training_min4
@@ -195,6 +203,8 @@ testing_class <- testing %>%
 #compute overall testing accuracy
 mean(testing_class$Outcome==testing_class$Outcome_class)
 ```
+## ROC Curve
+
 ```{r}
 #create required objects for ROC
 pred <- prediction(predictions=testing_class$Outcome_prob,
@@ -205,6 +215,29 @@ perf <- performance(pred,measure='sens',x.measure='spec')
 #plot ROC curve with threshold color
 plot(perf,colorize=TRUE)
 ```
+## Accuracy vs. Cutoff
+
+```{r}
+#plot accuracy curve
+perf2 <- performance(pred,measure='acc')
+plot(perf2)
+```
+## Area Under the Curve
+
+```{r}
+#plot TPR vs. FPR curve
+perf3 <- performance(pred,measure='tpr',x.measure='fpr')
+plot(perf3,colorize=TRUE)
+abline(a=0,b=1)
+```
+
+```{r}
+#compute AUC for the ROC curve
+perf4 <- performance(pred,measure='auc')
+perf4@y.values
+```
+
+## Changing Threshold -> Finalized Model
 
 ```{r}
 model_final <- glm(Outcome~., data=training, family = "binomial")
@@ -218,6 +251,8 @@ testing_class <- testing %>%
 #compute overall testing accuracy
 mean(testing_class$Outcome==testing_class$Outcome_class)
 ```
+## Sensitivity vs Specificity
+
 ```{r}
 # create contingency table
 contingency_table <- table(testing_class$Outcome,testing_class$Outcome_class)
@@ -231,7 +266,100 @@ sensitivity <- contingency_table[2, 2] / (contingency_table[2, 2] + contingency_
 # Print the results
 print(paste("Specificity:", specificity))
 print(paste("Sensitivity:", sensitivity))
-
 ```
 
+# Cross-Validation (k-fold) 
 
+## Creating Samples
+
+We will do 4 folds. 
+
+```{r}
+# Set the seed for reproducibility
+set.seed(1)
+
+# Create four mutually exclusive samples
+num_samples <- 4
+
+# Create empty list to store the samples
+sample_list <- vector("list", num_samples)
+
+# Split the dataset into mutually exclusive samples
+sample_indices <- createDataPartition(df$Outcome, p = 0.25, times = num_samples)
+
+for (i in 1:num_samples) {
+  sample_list[[i]] <- df[sample_indices[[i]], ]
+}
+
+# Access the samples
+A <- sample_list[[1]] %>% select(Pregnancies, Glucose, BloodPressure, Age, Outcome)
+B <- sample_list[[2]] %>% select(Pregnancies, Glucose, BloodPressure, Age, Outcome)
+C <- sample_list[[3]] %>% select(Pregnancies, Glucose, BloodPressure, Age, Outcome)
+D <- sample_list[[4]] %>% select(Pregnancies, Glucose, BloodPressure, Age, Outcome)
+```
+
+## Validation Testing
+
+### Train on B,C,D and test on A
+
+```{r}
+train_1 <- rbind(B, C, D)
+
+model_A <- glm(Outcome~., data=train_1, family = "binomial")
+
+# Change the threshold to 0.54
+testing_class <- A %>%
+  mutate(Outcome_prob=predict(model_A,newdata=A,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.54,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
+
+### Train on A,C,D and test on B
+
+```{r}
+train_2 <- rbind(A, C, D)
+
+model_B <- glm(Outcome~., data=train_2, family = "binomial")
+
+# Change the threshold to 0.54
+testing_class <- B %>%
+  mutate(Outcome_prob=predict(model_B,newdata=B,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.54,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
+
+### Train on A,B,D and test on C
+
+```{r}
+train_3 <- rbind(A, B, D)
+
+model_C <- glm(Outcome~., data=train_3, family = "binomial")
+
+# Change the threshold to 0.54
+testing_class <- C %>%
+  mutate(Outcome_prob=predict(model_C,newdata=C,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.54,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
+
+### Train on A,B,C and test on D
+
+```{r}
+train_4 <- rbind(A, B, C)
+
+model_D <- glm(Outcome~., data=train_4, family = "binomial")
+
+# Change the threshold to 0.54
+testing_class <- D %>%
+  mutate(Outcome_prob=predict(model_D,newdata=D,type='response'),
+         Outcome_class=if_else(Outcome_prob>0.54,1,0))
+
+#compute overall testing accuracy
+mean(testing_class$Outcome==testing_class$Outcome_class)
+```
