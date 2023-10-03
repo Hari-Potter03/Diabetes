@@ -5,5 +5,4 @@ In this project on diabetes, I conducted a comprehensive analysis using R Markdo
 
 ## Results
 
-### Model Accuracy
-Accuracy = 0.83
+The model's overall accuracy is approximately 82.81%. This logistic regression model provides insights into the impact of various factors, such as pregnancies and glucose levels, on the likelihood of diabetes. However, it suggests that blood pressure and age may not be significant predictors in this context, as their p-values are above the conventional significance level of 0.05. The model has a specificity of approximately 94.70%. This means that the model correctly identifies individuals without diabetes in about 94.70% of cases. The model has a sensitivity of approximately 56.67%. This means that the model correctly identifies individuals with diabetes in about 56.67% of cases. Based on the k-fold cross-validation results, your logistic regression model for predicting diabetes outcomes appears to be a reasonably robust and stable model. It consistently achieves accuracies in the range of 70.83% to 77.60% across different subsets of your dataset. This suggests that the model is likely to perform well in making predictions on new, unseen data.
